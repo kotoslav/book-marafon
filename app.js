@@ -1,16 +1,17 @@
-var createError = require('http-errors');
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var bodyParser = require('body-parser');
-var logger = require('morgan');
+const createError = require('http-errors');
+const express = require('express');
+const path = require('path');
+const cookieParser = require('cookie-parser');
+const bodyParser = require('body-parser');
+const logger = require('morgan');
+require('./app_server/models/db');
 
-var routes = require('./app_server/routes/index');
-var users = require('./app_server/routes/users');
 
-var app = express();
+const routes = require('./app_server/routes/index');
+const users = require('./app_server/routes/users');
 
-// view engine setup
+const app = express();
+
 app.set('views', path.join(__dirname, 'app_server', 'views'));
 app.set('view engine', 'jade');
 
