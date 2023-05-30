@@ -1,39 +1,11 @@
 const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
 
-const userSchema = new mongoose.Schema({
-    firstName: { type: String, required: true, maxLength: 100 },
-    familyName: { type: String, required: true, maxLength: 100 },
-    fatherName: { type: String, maxLength: 100 },
-    nickName: {type: String, required: true, unique: true},
-    dateOfBirth: { type: Date, required: true },
-    email: { type: String, required: true, lowercase: true },
-    password: {type: String}, //some secuirity token ofc
-    currentStage: currentStageSchema,
-    oldStages: [oldStageSchema],
-    liveLocation: {
-        coord: [Number, Number],
-        city: String,
-        region: String
-    },
-    createdAt: Date,
-    updatedAt: Date
-});
-
-const currentStageSchema = new mongoose.Schema({
-    start: Date,
-    end: Date,
-    target: Number,
-    groupName: String,
-    reviews: [reviewSchema]
-});
-
-const oldStageSchema = new mongoose.Schema({
-    start: Date,
-    end: Date,
-    position: Number,
-    finished: Boolean,
-    groupName: String,
-    reviews: [reviewSchema]
+const ratingShema = new mongoose.Schema({
+   points: Number,
+   emoji: String,
+   createdAt: Date,
+   moderator: { type: Schema.ObjectId, ref: 'User' }
 });
 
 const reviewSchema = new mongoose.Schema({
@@ -45,18 +17,45 @@ const reviewSchema = new mongoose.Schema({
     rating: ratingShema
 });
 
-const ratingShema = new mongoose.Schema({
-   points: Number,
-   emoji: String,
-   createdAt: Date,
-   moderator: {
-       name: String,
-       _id: ObjectId
-}
+const oldStageSchema = new mongoose.Schema({
+    start: Date,
+    end: Date,
+    position: Number,
+    finished: Boolean,
+    groupName: String,
+    reviews: [reviewSchema]
+});
+
+const currentStageSchema = new mongoose.Schema({
+    start: Date,
+    end: Date,
+    target: Number,
+    groupName: String,
+    reviews: [reviewSchema]
+});
+
+const userSchema = new mongoose.Schema({
+    firstName: { type: String, required: true, maxLength: 100 },
+    familyName: { type: String, required: true, maxLength: 100 },
+    fatherName: { type: String, maxLength: 100 },
+    nickName: {type: String, required: true}, //, unique: true},
+    dateOfBirth: { type: Date, required: true },
+    email: { type: String, required: true, lowercase: true },
+    password: {type: String},
+    currentStage: currentStageSchema,
+    oldStages: [oldStageSchema],
+    liveLocation: {
+        coord: [Number, Number],
+        city: String,
+        region: String
+    },
+    createdAt: Date,
+    updatedAt: Date
 });
 
 
-usersSchema.pre('save', function(next) {
+
+userSchema.pre('save', function(next) {
     const now = Date.now();
 
     this.updatedAt = now;
@@ -82,3 +81,4 @@ let model = new UserModel(
 );
 
 model.save();
+
