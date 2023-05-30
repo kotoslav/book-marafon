@@ -1,11 +1,10 @@
 const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
 
 const ratingShema = new mongoose.Schema({
    points: Number,
    emoji: String,
    createdAt: Date,
-   moderator: { type: Schema.ObjectId, ref: 'User' }
+   moderator: { type: mongoose.Schema.ObjectId, ref: 'User' }
 });
 
 const reviewSchema = new mongoose.Schema({
@@ -41,44 +40,42 @@ const userSchema = new mongoose.Schema({
     nickName: {type: String, required: true}, //, unique: true},
     dateOfBirth: { type: Date, required: true },
     email: { type: String, required: true, lowercase: true },
-    password: {type: String},
+    passwordHash: {type: String},
     currentStage: currentStageSchema,
     oldStages: [oldStageSchema],
     liveLocation: {
         coord: [Number, Number],
         city: String,
         region: String
-    },
-    createdAt: Date,
-    updatedAt: Date
-});
-
-
-
-userSchema.pre('save', function(next) {
-    const now = Date.now();
-
-    this.updatedAt = now;
-    if (!this.createdAt) {
-        this.createdAt = now;
     }
-
-    next();
-});
-
-let UserModel = mongoose.model('User', userSchema);
+},
+    {timestamps: true}
+);
 
 
+const UserModel = mongoose.model('User', userSchema);
+
+/*
 
 let model = new UserModel(
-{
-    firstName: "Вячеслав",
-    familyName: "Сыромятников",
+
+  {
+    firstName: 'Вячеслав',
+    familyName: 'Сыромятников',
+    nickName: 'slava',
     dateOfBirth: new Date("1995-02-12"),
     email: 'zalll007@yandex.ru',
-    nickName: "slava"
-}
+    liveLocation: { coord: [0, 0], city: "Красноярск" },
+    oldStages: [],
+    currentStage: {
+      target: 8,
+      reviews: [
+        { bookAuthor: 'pushkon', reviewText: 'ebat' },
+        { bookAuthor: 'pushkon', reviewText: 'ebat' }
+      ]
+    }
+  }
 );
 
 model.save();
-
+*/

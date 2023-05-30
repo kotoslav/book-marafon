@@ -6,22 +6,33 @@ const sendJsonResponse = function(res, status, content) {
     res.json(content);
 };
 
-module.exports.reviewsReadMany =  function(req, res) {
+module.exports.reviewsReadMany =  async function(req, res) {
   sendJsonResponse(res, 200, {"status" : "success"});
 };
 
-module.exports.reviewsReadOne =  function(req, res) {
+module.exports.reviewsReadOne =  async function(req, res) {
+  try {
+  const user = await User.findOne().exec();
+  const review = user.currentStage.reviews.id(req.params.reviewid)
+  if (!user) {
+    sendJsonResponse(res, 404, {"message": "userid not found"});
+  } else {
+    sendJsonResponse(res, 200, review);
+  }
+  } catch(err) {
+    sendJsonResponse(res, 400, {"message": "userid invalid"});
+    console.log(err);
+  }
+};
+
+module.exports.reviewsCreate = async function(req, res) {
   sendJsonResponse(res, 200, {"status" : "success"});
 };
 
-module.exports.reviewsCreate =  function(req, res) {
+module.exports.reviewsUpdateOne = async function(req, res) {
   sendJsonResponse(res, 200, {"status" : "success"});
 };
 
-module.exports.reviewsUpdateOne =  function(req, res) {
-  sendJsonResponse(res, 200, {"status" : "success"});
-};
-
-module.exports.reviewsDeleteOne =  function(req, res) {
+module.exports.reviewsDeleteOne = async function(req, res) {
   sendJsonResponse(res, 200, {"status" : "success"});
 };

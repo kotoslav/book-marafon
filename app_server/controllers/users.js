@@ -6,17 +6,24 @@ const sendJsonResponse = function(res, status, content) {
     res.json(content);
 };
 
-module.exports.usersReadOne =  function(req, res) {
-  User.findById(req.params.userid).
-  exec(function(err, user) {
+module.exports.usersReadOne =  async function(req, res) {
+  try {
+  const user = await User.findById(req.params.userid).exec();
+  if (!user) {
+    sendJsonResponse(res, 404, {"message": "userid not found"});
+  } else {
     sendJsonResponse(res, 200, user);
-  })
+  }
+  } catch(err) {
+    sendJsonResponse(res, 400, {"message": "userid invalid"});
+    console.log(err);
+  }
 };
 
-module.exports.usersCreate =  function(req, res) {
+module.exports.usersCreate =  async function(req, res) {
   sendJsonResponse(res, 200, {"status" : "success"});
 };
 
-module.exports.usersUpdateOne =  function(req, res) {
+module.exports.usersUpdateOne =  async function(req, res) {
   sendJsonResponse(res, 200, {"status" : "success"});
 };
