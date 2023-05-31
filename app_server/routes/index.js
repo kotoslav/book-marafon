@@ -10,13 +10,17 @@ const homepageController = function(req, res) {
 router.get('/', homepageController);
 
 router.get('/users/:userid', ctrlUsers.usersReadOne);
-router.post('/users', ctrlUsers.usersCreate);
+router.post('/users/register', ctrlUsers.usersRegister);
+router.post('/users/login', ctrlUsers.usersLogin);
 router.put('/users/:userid', ctrlUsers.usersUpdateOne);
 
+router.get('/reviews/:userid', ctrlReviews.reviewsReadManyByUser);
 router.get('/reviews', ctrlReviews.reviewsReadMany);
-router.get('/reviews/:reviewid', ctrlReviews.reviewsReadOne);
-router.post('/reviews', ctrlReviews.reviewsCreate);
+router.get('/reviews/:userid/:reviewid', ctrlReviews.reviewsReadOne);
+router.post('/reviews/:userid', ctrlReviews.reviewsCreate);
 router.put('/reviews/:reviewid', ctrlReviews.reviewsUpdateOne);
 router.delete('/reviews/:reviewid', ctrlReviews.reviewsDeleteOne);
+
+
 
 module.exports = router;

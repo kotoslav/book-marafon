@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
 const User = mongoose.model('User');
 
 const sendJsonResponse = function(res, status, content) {
@@ -15,12 +16,23 @@ module.exports.usersReadOne =  async function(req, res) {
     sendJsonResponse(res, 200, user);
   }
   } catch(err) {
-    sendJsonResponse(res, 400, {"message": "userid invalid"});
+    sendJsonResponse(res, 400, {"message": "userid not valid"});
     console.log(err);
   }
 };
 
-module.exports.usersCreate =  async function(req, res) {
+module.exports.usersRegister =  async function(req, res) {
+  try {
+    const {nickName, password} = req.body;
+    const isUsed = await User.findOne({nickName});
+
+    sendJsonResponse(res, 200, isUsed);
+  } catch (err) {}
+
+
+};
+
+module.exports.usersLogin =  async function(req, res) {
   sendJsonResponse(res, 200, {"status" : "success"});
 };
 

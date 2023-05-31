@@ -37,15 +37,15 @@ const userSchema = new mongoose.Schema({
     firstName: { type: String, required: true, maxLength: 100 },
     familyName: { type: String, required: true, maxLength: 100 },
     fatherName: { type: String, maxLength: 100 },
-    nickName: {type: String, required: true}, //, unique: true},
+    nickName: {type: String, required: true, unique: true},
     dateOfBirth: { type: Date, required: true },
     email: { type: String, required: true, lowercase: true },
-    passwordHash: {type: String},
+    passwordHash: {type: String, required: true},
     currentStage: currentStageSchema,
     oldStages: [oldStageSchema],
     liveLocation: {
         coord: [Number, Number],
-        city: String,
+        city: {type: String, required: true},
         region: String
     }
 },
