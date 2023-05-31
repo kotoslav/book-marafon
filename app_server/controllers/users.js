@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const User = mongoose.model('User');
 
+
 const sendJsonResponse = function(res, status, content) {
     res.status(status);
     res.json(content);
@@ -24,9 +25,9 @@ module.exports.usersReadOne =  async function(req, res) {
 module.exports.usersRegister =  async function(req, res) {
   try {
     const {nickName, password} = req.body;
-    const isUsed = await User.findOne({nickName});
+    //const isUsed = await User.findOne({nickName});
 
-    sendJsonResponse(res, 200, isUsed);
+    sendJsonResponse(res, 200, req.body);
   } catch (err) {}
 
 

@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const ctrlUsers = require('../controllers/users');
 const ctrlReviews = require('../controllers/reviews');
+const registerValidation  = require('../validations/auth');
+
+const {validationResult} = require('express-validator');
 
 const homepageController = function(req, res) {
   res.render('index', { title: 'Express!' });
@@ -10,7 +13,7 @@ const homepageController = function(req, res) {
 router.get('/', homepageController);
 
 router.get('/users/:userid', ctrlUsers.usersReadOne);
-router.post('/users/register', ctrlUsers.usersRegister);
+router.post('/users/register', registerValidation, ctrlUsers.usersRegister);
 router.post('/users/login', ctrlUsers.usersLogin);
 router.put('/users/:userid', ctrlUsers.usersUpdateOne);
 

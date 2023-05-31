@@ -1,14 +1,15 @@
-const { body } = require('express-validator');
+const { check, validationResult } = require('express-validator')
 
-const registerValidator = [
-    body('firstName').notEmpty(),
-    body('familyName').notEmpty(),
-    body('fatherName').notEmpty(),
-    body('nickName').notEmpty(),
-    body('dateOfBirth').isDate(),
-    body('email').trim().isEmail(),
-    body('password').isStrongPassword(options:{
+const registerValidation = [
+    check('firstName').notEmpty(),
+    check('familyName').notEmpty(),
+    check('nickName').notEmpty(),
+    check('dateOfBirth').isDate(),
+    check('email').trim().isEmail(),
+    check('password').isStrongPassword({
         minLength: 5
     }),
-    body('liveLocation').notEmpty()
+    check('liveLocation').notEmpty()
 ];
+
+exports.registerValidation;
