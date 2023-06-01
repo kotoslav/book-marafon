@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const User = mongoose.model('User');
-
+const { check, validationResult } = require('express-validator');
 
 const sendJsonResponse = function(res, status, content) {
     res.status(status);
@@ -23,18 +24,87 @@ module.exports.usersReadOne =  async function(req, res) {
 };
 
 module.exports.usersRegister =  async function(req, res) {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json(errors.array());
+  };
+
+  const password = req.body.password;
+  const salt = await bcrypt.genSalt(10);
+  const hash = await bcrypt.hash(password, salt);
+
+  const doc = new User({
+    firstName: req.body.firstName,
+    familyName: req.body.familyName,
+    fatherName: req.body.fatherName,
+    nickName: req.body.nickName,
+    dateOfBirth: req.body.dateOfBirth,
+    email: req.body.email,
+    passwordHash: hash,
+    liveLocation: req.body.liveLocation
+  });
+
   try {
-    const {nickName, password} = req.body;
-    //const isUsed = await User.findOne({nickName});
+    const user = await doc.save();
 
-    sendJsonResponse(res, 200, req.body);
-  } catch (err) {}
+    const token = jwt.sign(
+      {
+        _id: user._id,
+      },
+      'replaceIt',
+      {
+        expiresIn: '30d'
+      }
+    );
 
+    const {passwordHash, ...userData} = user._doc;
 
+    res.status(201).json( {...userData, token});
+  } catch (err) {
+    if (err.code == 11000) {
+      res.status(500).json({
+        error: "this nickname is already in the database"
+      });
+    } else {
+      res.status(500).json(err);
+    };
+  }
 };
 
 module.exports.usersLogin =  async function(req, res) {
-  sendJsonResponse(res, 200, {"status" : "success"});
+  try {
+    const user = await User.findOne({nickName: req.body.nickName});
+
+    if (!user) {
+      return res.status(404).json({message: "Такого пользователя не существует"});
+    };
+
+    const isValidPass = await bcrypt.compare(req.body.password, user._doc.passwordHash);
+
+    if (!isValidPass) {
+      return res.status(400).json(
+        {
+        message: "Неверный логин или пароль"
+        })
+    };
+
+      const token = jwt.sign(
+      {
+        _id: user._id,
+      },
+      'replaceIt',
+      {
+        expiresIn: '30d'
+      }
+    );
+
+    const {passwordHash, ...userData} = user._doc;
+
+    return res.status(201).json( {...userData, token});
+
+  } catch (err) {
+    res.status(500).json("Не удалось авторизоваться");
+  }
 };
 
 module.exports.usersUpdateOne =  async function(req, res) {

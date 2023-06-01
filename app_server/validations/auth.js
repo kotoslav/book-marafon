@@ -7,9 +7,14 @@ const registerValidation = [
     check('dateOfBirth').isDate(),
     check('email').trim().isEmail(),
     check('password').isStrongPassword({
-        minLength: 5
+        minLength: 5,
+        minLowercase: 0,
+        minUppercase: 0,
+        minNumbers: 0,
+        minSymbols: 0
     }),
     check('liveLocation').notEmpty()
 ];
 
-exports.registerValidation;
+
+module.exports.registerValidation = registerValidation;
