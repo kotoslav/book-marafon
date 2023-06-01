@@ -2,7 +2,10 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = mongoose.model('User');
-const { check, validationResult } = require('express-validator');
+const { validationResult } = require('express-validator');
+const { checkAuth, isOwner } = require('../utils/checkauth');
+
+
 
 const sendJsonResponse = function(res, status, content) {
     res.status(status);
@@ -11,7 +14,14 @@ const sendJsonResponse = function(res, status, content) {
 
 module.exports.usersReadOne =  async function(req, res) {
   try {
-  const user = await User.findById(req.params.userid).exec();
+
+
+  const user = (await checkAuth(req, res) && await isOwner(req, res))?
+  await User.findById(req.params.userid).select("-passwordHash").exec() :
+  await User.findById(req.params.userid)
+  .select("firstName currentStage liveLocation.city liveLocation.region").exec();
+
+
   if (!user) {
     sendJsonResponse(res, 404, {"message": "userid not found"});
   } else {
@@ -76,7 +86,7 @@ module.exports.usersLogin =  async function(req, res) {
     const user = await User.findOne({nickName: req.body.nickName});
 
     if (!user) {
-      return res.status(404).json({message: "Такого пользователя не существует"});
+      return res.status(404).json({message: "Incorrect password or username"});
     };
 
     const isValidPass = await bcrypt.compare(req.body.password, user._doc.passwordHash);
@@ -84,7 +94,7 @@ module.exports.usersLogin =  async function(req, res) {
     if (!isValidPass) {
       return res.status(400).json(
         {
-        message: "Неверный логин или пароль"
+        message: "Incorrect password or username"
         })
     };
 
@@ -100,7 +110,7 @@ module.exports.usersLogin =  async function(req, res) {
 
     const {passwordHash, ...userData} = user._doc;
 
-    return res.status(201).json( {...userData, token});
+    return res.status(200).json( {...userData, token});
 
   } catch (err) {
     res.status(500).json("Не удалось авторизоваться");

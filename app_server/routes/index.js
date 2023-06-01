@@ -3,7 +3,9 @@ const router = express.Router();
 const ctrlUsers = require('../controllers/users');
 const ctrlReviews = require('../controllers/reviews');
 
-const {registerValidation} = require('../validations/auth');
+
+const { registerValidation } = require('../validations/auth');
+
 
 const homepageController = function(req, res) {
   res.render('index', { title: 'Express!' });

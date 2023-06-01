@@ -41,6 +41,7 @@ const userSchema = new mongoose.Schema({
     dateOfBirth: { type: Date, required: true },
     email: { type: String, required: true, lowercase: true },
     passwordHash: {type: String, required: true},
+    role: {type: String, default: "player"},
     currentStage: currentStageSchema,
     oldStages: [oldStageSchema],
     liveLocation: {
