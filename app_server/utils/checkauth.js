@@ -13,7 +13,7 @@ module.exports.checkAuth = async (req, res) => {
     }
 }
 
-module.exports.isOwner = async (req, res) => {
+module.exports.hasPermission = async (req, res) => {
     if (req.userId) {
         const { role } = await User.findById(req.userId);
         console.log(role);

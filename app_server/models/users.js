@@ -3,18 +3,15 @@ const mongoose = require('mongoose');
 const ratingShema = new mongoose.Schema({
    points: Number,
    emoji: String,
-   createdAt: Date,
    moderator: { type: mongoose.Schema.ObjectId, ref: 'User' }
-});
+}, {timestamps: true});
 
 const reviewSchema = new mongoose.Schema({
     bookAuthor: String,
     bookName: String,
     reviewText: String,
-    createdAt: Date,
-    updatedAt: Date,
     rating: ratingShema
-});
+}, {timestamps: true});
 
 const oldStageSchema = new mongoose.Schema({
     start: Date,
@@ -55,28 +52,4 @@ const userSchema = new mongoose.Schema({
 
 
 const UserModel = mongoose.model('User', userSchema);
-
-/*
-
-let model = new UserModel(
-
-  {
-    firstName: 'Вячеслав',
-    familyName: 'Сыромятников',
-    nickName: 'slava',
-    dateOfBirth: new Date("1995-02-12"),
-    email: 'zalll007@yandex.ru',
-    liveLocation: { coord: [0, 0], city: "Красноярск" },
-    oldStages: [],
-    currentStage: {
-      target: 8,
-      reviews: [
-        { bookAuthor: 'pushkon', reviewText: 'ebat' },
-        { bookAuthor: 'pushkon', reviewText: 'ebat' }
-      ]
-    }
-  }
-);
-
-model.save();
-*/
+const ReviewModel = mongoose.model('Review', reviewSchema);

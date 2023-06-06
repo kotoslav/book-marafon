@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = mongoose.model('User');
 const { validationResult } = require('express-validator');
-const { checkAuth, isOwner } = require('../utils/checkauth');
+const { checkAuth, hasPermission } = require('../utils/checkauth');
 
 
 
@@ -16,7 +16,7 @@ module.exports.usersReadOne =  async function(req, res) {
   try {
 
 
-  const user = (await checkAuth(req, res) && await isOwner(req, res))?
+  const user = (await checkAuth(req, res) && await hasPermission(req, res))?
   await User.findById(req.params.userid).select("-passwordHash").exec() :
   await User.findById(req.params.userid)
   .select("firstName currentStage liveLocation.city liveLocation.region").exec();
