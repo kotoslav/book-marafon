@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const ratingShema = new mongoose.Schema({
-   points: Number,
+   points: {type: Number, default: 0},
    emoji: String,
    moderator: { type: mongoose.Schema.ObjectId, ref: 'User' }
 }, {timestamps: true});
@@ -10,7 +10,8 @@ const reviewSchema = new mongoose.Schema({
     bookAuthor: String,
     bookName: String,
     reviewText: String,
-    rating: ratingShema
+    imgURL: String,
+    rating: {type: ratingShema, default: {}}
 }, {timestamps: true});
 
 const oldStageSchema = new mongoose.Schema({
@@ -19,7 +20,7 @@ const oldStageSchema = new mongoose.Schema({
     position: Number,
     finished: Boolean,
     groupName: String,
-    reviews: [reviewSchema]
+    reviews: { type: [reviewSchema], default: []}
 });
 
 const currentStageSchema = new mongoose.Schema({
@@ -27,7 +28,7 @@ const currentStageSchema = new mongoose.Schema({
     end: Date,
     target: Number,
     groupName: String,
-    reviews: [reviewSchema]
+    reviews: { type: [reviewSchema], default: []}
 });
 
 const userSchema = new mongoose.Schema({
@@ -39,7 +40,7 @@ const userSchema = new mongoose.Schema({
     email: { type: String, required: true, lowercase: true },
     passwordHash: {type: String, required: true},
     role: {type: String, default: "player"},
-    currentStage: currentStageSchema,
+    currentStage: {type: currentStageSchema, default: {}},
     oldStages: [oldStageSchema],
     liveLocation: {
         coord: [Number, Number],

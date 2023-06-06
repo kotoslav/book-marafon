@@ -12,20 +12,21 @@ const sendJsonResponse = function(res, status, content) {
 
 module.exports.reviewsReadManyByUser =  async function(req, res) {
   try {
-  const user = await User
-  .findById(req.params.userid)
-  .select("currentStage")
-  .exec();
-  const reviews = user.currentStage.reviews;
+
+  const user = await User.findById(req.params.userid).exec();
+  const stage = user.currentStage;
+
   if (!user) {
     sendJsonResponse(res, 404, {"message": "userid not found"});
-  } else if (!reviews) {
+  } else if (!stage) {
+    sendJsonResponse(res, 404, {"message": "user does not participate"});
+  } else if (! stage.reviews ){
     sendJsonResponse(res, 404, {"message": "reviews not found"});
   } else {
-    sendJsonResponse(res, 200, reviews);
+    return res.status(200).json(stage.reviews);
   }
   } catch(err) {
-    sendJsonResponse(res, 400, {"message": "userid or revievid not valid"});
+    sendJsonResponse(res, 400, {"message": "userid or reviewid not valid"});
     console.log(err);
   }
 };
@@ -76,17 +77,19 @@ module.exports.reviewsCreate = async function(req, res) {
         const newReview = new Review({
           bookAuthor: req.body.bookAuthor,
           bookName: req.body.bookName,
-          reviewText: req.body.reviewText
+          reviewText: req.body.reviewText,
+          imgURL: req.body.imgURL
         });
+        reviews.push(newReview);
+        user.save();
+        return res.status(200).json({"status" : "success"});
     } catch(err) {
-
+        return res.status(500).json({error: "something wrong"});
     }
 
   } else {
     return res.status(500).json({error: "Has not permission"});
   }
-
-  sendJsonResponse(res, 200, {"status" : "success"});
 };
 
 module.exports.reviewsUpdateOne = async function(req, res) {
