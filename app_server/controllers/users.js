@@ -14,8 +14,6 @@ const sendJsonResponse = function(res, status, content) {
 
 module.exports.usersReadOne =  async function(req, res) {
   try {
-
-
   const user = (await checkAuth(req, res) && await hasPermission(req, res))?
   await User.findById(req.params.userid).select("-passwordHash").exec() :
   await User.findById(req.params.userid)

@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 const User = mongoose.model('User');
 const Review = mongoose.model('Review');
+const Rating = mongoose.model('Rating');
+
 const { validationResult } = require('express-validator');
 const { checkAuth, hasPermission } = require('../utils/checkauth');
 
@@ -70,9 +72,14 @@ module.exports.reviewsReadOne =  async function(req, res) {
 };
 
 module.exports.reviewsCreate = async function(req, res) {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json(errors.array());
+  };
   if (await checkAuth(req, res) && ( req.userId == req.params.userid || hasPermission(req, res)  )) {
     try {
-        const user = await User.findById(req.params.userid).exec();
+        const userId = req.params.userid ?? req.userId;
+        const user = await User.findById(userId).exec();
         const reviews = user.currentStage.reviews;
         const newReview = new Review({
           bookAuthor: req.body.bookAuthor,
@@ -95,9 +102,26 @@ module.exports.reviewsCreate = async function(req, res) {
 module.exports.reviewsUpdateOne = async function(req, res) {
   if (await checkAuth(req, res) && ( req.userId == req.params.userid || hasPermission(req, res)  )) {
     try {
+      const userId = req.params.userid ?? req.userId;
+      const user = await User.findById(userId).exec();
+      const review = user.currentStage.reviews.id(req.params.reviewid);
+      review.bookAuthor = req.body.bookAuthor;
+      review.bookName = req.body.bookName;
+      review.reviewText = req.body.reviewText;
+      review.imgURL = req.body.imgURL;
+      if (hasPermission(req, res)) {
+        const ratingReview = new Rating({
+          points: req.body.rating.points,
+          emojiURL: String,
+          moderator: { type: mongoose.Schema.ObjectId, ref: 'User' }
+        }
+        );
 
+      }
+      await user.save();
     } catch(err) {
-
+      console.log(err);
+      return res.status(500).json({error: "something wrong"});
     }
 
   } else {
@@ -110,6 +134,8 @@ module.exports.reviewsUpdateOne = async function(req, res) {
 module.exports.reviewsDeleteOne = async function(req, res) {
   if (await checkAuth(req, res) && ( req.userId == req.params.userid || hasPermission(req, res)  ))  {
     try {
+      const user = await User.findById(req.params.userid).select("currentStage").exec();
+      const review = user.currentStage.reviews.id(req.params.reviewid);
 
     } catch(err) {
 

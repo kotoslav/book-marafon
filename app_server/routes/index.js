@@ -5,6 +5,7 @@ const ctrlReviews = require('../controllers/reviews');
 
 
 const { registerValidation } = require('../validations/auth');
+const { reviewValidation } = require('../validations/review');
 
 
 const homepageController = function(req, res) {
@@ -21,8 +22,9 @@ router.put('/users/:userid', ctrlUsers.usersUpdateOne);
 router.get('/reviews/:userid', ctrlReviews.reviewsReadManyByUser);
 router.get('/reviews', ctrlReviews.reviewsReadMany);
 router.get('/reviews/:userid/:reviewid', ctrlReviews.reviewsReadOne);
-router.post('/reviews/:userid', ctrlReviews.reviewsCreate);
-router.put('/reviews/:reviewid', ctrlReviews.reviewsUpdateOne);
+router.post('/reviews/:userid', reviewValidation ,ctrlReviews.reviewsCreate);
+router.post('/reviews', reviewValidation, ctrlReviews.reviewsCreate);
+router.put('/reviews/:reviewid', reviewValidation, ctrlReviews.reviewsUpdateOne);
 router.delete('/reviews/:reviewid', ctrlReviews.reviewsDeleteOne);
 
 
