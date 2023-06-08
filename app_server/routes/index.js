@@ -28,6 +28,19 @@ router.put('/reviews/:reviewid', reviewValidation, ctrlReviews.reviewsUpdateOne)
 router.put('/reviews/:userid/:reviewid', reviewValidation, ctrlReviews.reviewsUpdateOne);
 router.delete('/reviews/:reviewid', ctrlReviews.reviewsDeleteOne);
 
+router.get('/stages/active', ctrlStages.stagesReadManyActive);
+router.get('/stages', ctrlStages.stagesReadMany);
+router.get('/stages/:stageid', ctrlsStages.stagesReadOne);
+router.post('/stages', ctrlStages.stagesCreate);
+router.put('/stages/:stageid', ctrlStages.stagesUpdateOne);
+router.delete('/stages/:stageid', ctrlStages.stagesDelete);
+
+router.get('/avatars', ctrlAvatars.avatarsReadMany);
+router.post('/avatars', ctrlAvatars.avatarsCreate);
+router.delete('avatars/:avatarid', ctrlAvatars.avatarDeleteOne);
+
+router.get('/notifications', ctrlNotifications.notificationsReadMany);
+
 
 
 module.exports = router;
