@@ -105,18 +105,16 @@ module.exports.reviewsUpdateOne = async function(req, res) {
       const userId = req.params.userid ?? req.userId;
       const user = await User.findById(userId).exec();
       const review = user.currentStage.reviews.id(req.params.reviewid);
-      review.bookAuthor = req.body.bookAuthor;
-      review.bookName = req.body.bookName;
-      review.reviewText = req.body.reviewText;
-      review.imgURL = req.body.imgURL;
-      if (hasPermission(req, res)) {
-        const ratingReview = new Rating({
+      review.bookAuthor = req.body.bookAuthor ?? review.bookAuthor;
+      review.bookName = req.body.bookName ?? review.bookName;
+      review.reviewText = req.body.reviewText ?? review.reviewText;
+      review.imgURL = req.body.imgURL ?? review.imgURL;
+      if (hasPermission(req, res) && req.body.rating) {
+        review.rating = new Rating({
           points: req.body.rating.points,
-          emojiURL: String,
-          moderator: { type: mongoose.Schema.ObjectId, ref: 'User' }
-        }
-        );
-
+          emojiURL: req.body.rating.emojiURL,
+          moderator: req.userId
+        });
       }
       await user.save();
     } catch(err) {

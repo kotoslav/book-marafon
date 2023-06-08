@@ -14,20 +14,8 @@ const reviewSchema = new mongoose.Schema({
     rating: {type: ratingShema, default: {}}
 }, {timestamps: true});
 
-const oldStageSchema = new mongoose.Schema({
-    start: Date,
-    end: Date,
-    position: Number,
-    finished: Boolean,
-    groupName: String,
-    reviews: { type: [reviewSchema], default: []}
-});
-
-const currentStageSchema = new mongoose.Schema({
-    start: Date,
-    end: Date,
-    target: Number,
-    groupName: String,
+const stageSchema = new mongoose.Schema({
+    stage: { type: mongoose.Schema.ObjectId, ref: 'Stage' },
     reviews: { type: [reviewSchema], default: []}
 });
 
@@ -40,8 +28,8 @@ const userSchema = new mongoose.Schema({
     email: { type: String, required: true, lowercase: true },
     passwordHash: {type: String, required: true},
     role: {type: String, default: "player"},
-    currentStage: {type: currentStageSchema, default: {}},
-    oldStages: [oldStageSchema],
+    currentStage: {type: stageSchema, default: {}},
+    oldStages: [stageSchema],
     liveLocation: {
         coord: [Number, Number],
         city: {type: String, required: true},

@@ -25,6 +25,7 @@ router.get('/reviews/:userid/:reviewid', ctrlReviews.reviewsReadOne);
 router.post('/reviews/:userid', reviewValidation ,ctrlReviews.reviewsCreate);
 router.post('/reviews', reviewValidation, ctrlReviews.reviewsCreate);
 router.put('/reviews/:reviewid', reviewValidation, ctrlReviews.reviewsUpdateOne);
+router.put('/reviews/:userid/:reviewid', reviewValidation, ctrlReviews.reviewsUpdateOne);
 router.delete('/reviews/:reviewid', ctrlReviews.reviewsDeleteOne);
 
 
