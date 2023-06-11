@@ -71,10 +71,10 @@ module.exports.usersRegister =  async function(req, res) {
   } catch (err) {
     if (err.code == 11000) {
       res.status(500).json({
-        error: "this nickname is already in the database"
+        error: "something wrong"
       });
     } else {
-      res.status(500).json(err);
+      res.status(500).json({error: "something wrong"});
     };
   }
 };
@@ -112,10 +112,35 @@ module.exports.usersLogin =  async function(req, res) {
     return res.status(200).json( {...userData, token});
 
   } catch (err) {
-    res.status(500).json("Не удалось авторизоваться");
+    res.status(500).json("something going wrong");
   }
 };
 
-module.exports.usersUpdateOne =  async function(req, res) {
-  sendJsonResponse(res, 200, {"status" : "success"});
+
+
+module.exports.usersUpdateOne = async function(req, res) {
+  const userId = req.params.userid ?? req.userId;
+  if (await checkAuth(req, res) && ( req.userId == userId || hasPermission(req, res)  )) {
+    try {
+      const user = await User.findById(userId).exec();
+      user.firstName = req.body.firstName ?? user.firstName;
+      user.familyName = req.body.familyName ?? user.familyName;
+      user.fatherName = req.body.fatherName ?? user.fatherName;
+      user.nickName = req.body.nickName ?? user.nickName;
+      user.dateOfBirth = req.body.dateOfBirth ?? user.dateOfBirth;
+      user.email = req.body.email ?? user.email;
+      user.liveLocation = req.body.liveLocation ?? user.liveLocation;
+      if (req.role == "admin" && req.body.role) {
+        user.role = req.body.role;
+      }
+      await user.save();
+      return res.status(201).json({status: "success"});
+    } catch(err) {
+      console.log(err);
+      return res.status(500).json({error: "something wrong"});
+    }
+
+  } else {
+    return res.status(500).json({error: "Has not permission"})
+  }
 };

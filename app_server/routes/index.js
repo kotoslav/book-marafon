@@ -18,6 +18,7 @@ router.get('/users/:userid', ctrlUsers.usersReadOne);
 router.post('/users/register', registerValidation, ctrlUsers.usersRegister);
 router.post('/users/login', ctrlUsers.usersLogin);
 router.put('/users/:userid', ctrlUsers.usersUpdateOne);
+router.put('/users', ctrlUsers.usersUpdateOne);
 
 router.get('/reviews/:userid', ctrlReviews.reviewsReadManyByUser);
 router.get('/reviews', ctrlReviews.reviewsReadMany);

@@ -53,7 +53,6 @@ module.exports.reviewsReadMany =  async function(req, res) {
 
 module.exports.reviewsReadOne =  async function(req, res) {
   try {
-
   const user = await User.findById(req.params.userid).select("currentStage").exec();
   const review = user.currentStage.reviews.id(req.params.reviewid);
 
@@ -76,9 +75,9 @@ module.exports.reviewsCreate = async function(req, res) {
   if (!errors.isEmpty()) {
     return res.status(400).json(errors.array());
   };
-  if (await checkAuth(req, res) && ( req.userId == req.params.userid || hasPermission(req, res)  )) {
+  const userId = req.params.userid ?? req.userId;
+  if (await checkAuth(req, res) && ( req.userId == userId || hasPermission(req, res)  )) {
     try {
-        const userId = req.params.userid ?? req.userId;
         const user = await User.findById(userId).exec();
         const reviews = user.currentStage.reviews;
         const newReview = new Review({
@@ -100,16 +99,16 @@ module.exports.reviewsCreate = async function(req, res) {
 };
 
 module.exports.reviewsUpdateOne = async function(req, res) {
-  if (await checkAuth(req, res) && ( req.userId == req.params.userid || hasPermission(req, res)  )) {
+  const userId = req.params.userid ?? req.userId;
+  if (await checkAuth(req, res) && ( req.userId == userId || hasPermission(req, res)  )) {
     try {
-      const userId = req.params.userid ?? req.userId;
       const user = await User.findById(userId).exec();
       const review = user.currentStage.reviews.id(req.params.reviewid);
       review.bookAuthor = req.body.bookAuthor ?? review.bookAuthor;
       review.bookName = req.body.bookName ?? review.bookName;
       review.reviewText = req.body.reviewText ?? review.reviewText;
       review.imgURL = req.body.imgURL ?? review.imgURL;
-      if (hasPermission(req, res) && req.body.rating) {
+      if (req.role == "moderator" && req.body.rating) {
         review.rating = new Rating({
           points: req.body.rating.points,
           emojiURL: req.body.rating.emojiURL,
@@ -117,20 +116,19 @@ module.exports.reviewsUpdateOne = async function(req, res) {
         });
       }
       await user.save();
+      return res.status(201).json({status: "success"});
     } catch(err) {
       console.log(err);
       return res.status(500).json({error: "something wrong"});
     }
-
   } else {
     return res.status(500).json({error: "Has not permission"})
   }
-
-  sendJsonResponse(res, 200, {"status" : "success"});
 };
 
 module.exports.reviewsDeleteOne = async function(req, res) {
-  if (await checkAuth(req, res) && ( req.userId == req.params.userid || hasPermission(req, res)  ))  {
+  const userId = req.params.userid ?? req.userId;
+  if (await checkAuth(req, res) && ( req.userId == userId || hasPermission(req, res)  )) {
     try {
       const user = await User.findById(req.params.userid).select("currentStage").exec();
       const review = user.currentStage.reviews.id(req.params.reviewid);
