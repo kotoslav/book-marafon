@@ -7,6 +7,8 @@ module.exports.checkAuth = async (req, res) => {
     try {
         const decoded = jwt.verify(token, 'replaceIt');
         req.userId = decoded._id;
+        const { role } = await User.findById(req.userId);
+        req.role = role;
         return true;
     } catch {
         return false;
@@ -15,10 +17,8 @@ module.exports.checkAuth = async (req, res) => {
 
 module.exports.hasPermission = async (req, res) => {
     if (req.userId) {
-        const { role } = await User.findById(req.userId);
-        console.log(role);
         return req.params.userid === req.userId
-        || role == "admin" || role == "moderator";
+        || req.role == "admin" || req.role == "moderator";
     } else {
         return false;
     }

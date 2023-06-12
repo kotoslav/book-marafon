@@ -1,11 +1,11 @@
 const { check, validationResult } = require('express-validator')
 
 const registerValidation = [
-    check('firstName').notEmpty(),
-    check('familyName').notEmpty(),
-    check('nickName').notEmpty(),
-    check('dateOfBirth').isDate(),
-    check('email').trim().isEmail(),
+    check('firstName').isString().notEmpty(),
+    check('familyName').isString().notEmpty(),
+    check('nickName').isString().notEmpty(),
+    check('dateOfBirth').isDate().notEmpty(),
+    check('email').trim().isEmail().notEmpty(),
     check('password').isStrongPassword({
         minLength: 5,
         minLowercase: 0,
