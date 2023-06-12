@@ -17,7 +17,7 @@ module.exports.usersReadOne =  async function(req, res) {
   const user = (await checkAuth(req, res) && await hasPermission(req, res))?
   await User.findById(req.params.userid).select("-passwordHash").exec() :
   await User.findById(req.params.userid)
-  .select("firstName currentStage liveLocation.city liveLocation.region").exec();
+  .select("firstName currentStage oldStages liveLocation.city liveLocation.region").exec();
 
 
   if (!user) {
@@ -116,11 +116,9 @@ module.exports.usersLogin =  async function(req, res) {
   }
 };
 
-
-
 module.exports.usersUpdateOne = async function(req, res) {
   const userId = req.params.userid ?? req.userId;
-  if (await checkAuth(req, res) && ( req.userId == userId || hasPermission(req, res)  )) {
+  if (await checkAuth(req, res) && ( req.userId == userId || hasPermission(req, res) )) {
     try {
       const user = await User.findById(userId).exec();
       user.firstName = req.body.firstName ?? user.firstName;
@@ -133,6 +131,48 @@ module.exports.usersUpdateOne = async function(req, res) {
       if (req.role == "admin" && req.body.role) {
         user.role = req.body.role;
       }
+      await user.save();
+      return res.status(201).json({status: "success"});
+    } catch(err) {
+      console.log(err);
+      return res.status(500).json({error: "something wrong"});
+    }
+
+  } else {
+    return res.status(500).json({error: "Has not permission"})
+  }
+};
+
+/*
+В методы ниже добавить проверку активности выбраного и текущего этапа
+*/
+module.exports.usersStageRegister = async function(req, res) {
+  const userId = req.params.userid ?? req.userId;
+  if (await checkAuth(req, res) && ( req.userId == userId || hasPermission(req, res) )) {
+    try {
+      const user = await User.findById(userId).exec();
+      user.oldStages.push(user.currentStage);
+      user.currentStage.reviews = [];
+      user.currentStage.stage = req.params.stageid;
+      await user.save();
+      return res.status(201).json({status: "success"});
+    } catch(err) {
+      console.log(err);
+      return res.status(500).json({error: "something wrong"});
+    }
+
+  } else {
+    return res.status(500).json({error: "Has not permission"})
+  }
+};
+
+
+module.exports.usersStageMove = async function(req, res) {
+  const userId = req.params.userid ?? req.userId;
+  if (await checkAuth(req, res) && ( req.userId == userId || hasPermission(req, res) )) {
+    try {
+      const user = await User.findById(userId).exec();
+      user.currentStage.stage = req.params.stageid;
       await user.save();
       return res.status(201).json({status: "success"});
     } catch(err) {

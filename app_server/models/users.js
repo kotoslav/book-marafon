@@ -11,6 +11,7 @@ const reviewSchema = new mongoose.Schema({
     bookName: String,
     reviewText: String,
     imgURL: String,
+    delete: {type: Boolean, default: false},
     rating: {type: ratingShema, default: {}}
 }, {timestamps: true});
 
