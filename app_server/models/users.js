@@ -1,18 +1,16 @@
 const mongoose = require('mongoose');
 
-const ratingShema = new mongoose.Schema({
-   points: {type: Number, default: 0},
-   emojiURL: String,
-   moderator: { type: mongoose.Schema.ObjectId, ref: 'User' }
-}, {timestamps: true});
-
 const reviewSchema = new mongoose.Schema({
     bookAuthor: String,
     bookName: String,
     reviewText: String,
     imgURL: String,
     delete: {type: Boolean, default: false},
-    rating: {type: ratingShema, default: {}}
+    rating: {
+        points: {type: Number, default: 0},
+        emojiURL: String,
+        moderator: { type: mongoose.Schema.ObjectId, ref: 'User' }
+    }
 }, {timestamps: true});
 
 const stageSchema = new mongoose.Schema({
@@ -43,4 +41,3 @@ const userSchema = new mongoose.Schema({
 
 const UserModel = mongoose.model('User', userSchema);
 const ReviewModel = mongoose.model('Review', reviewSchema);
-const RatingModel = mongoose.model('Rating', ratingShema);

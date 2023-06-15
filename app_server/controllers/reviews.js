@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 const User = mongoose.model('User');
 const Review = mongoose.model('Review');
-const Rating = mongoose.model('Rating');
 
 const { validationResult } = require('express-validator');
 const { checkAuth, hasPermission } = require('../utils/checkauth');
@@ -35,7 +34,7 @@ module.exports.reviewsReadManyByUser =  async function(req, res) {
     reviews = stage.reviews.toObject().filter((el) => {return el.delete == false});
     };
     } else {
-    reviews = stage.reviews.toObject().filter((el) => {return el.delete == false && el.moderator });
+    reviews = stage.reviews.toObject().filter((el) => {return el.delete == false && el.rating.moderator });
     }
     return res.status(200).json(reviews);
   }
@@ -68,7 +67,7 @@ module.exports.oldStageReviewsReadManyByUser = async function(req, res) {
       reviews = stage.reviews.filter((el) => {return el.delete == false});
     };
     } else {
-      reviews = stage.reviews.filter((el) => {return el.delete == false && el.moderator });
+      reviews = stage.reviews.filter((el) => {return el.delete == false && el.rating.moderator });
     }
     return res.status(200).json(reviews);
   }
@@ -79,6 +78,7 @@ module.exports.oldStageReviewsReadManyByUser = async function(req, res) {
 
 module.exports.reviewsReadOne =  async function(req, res) {
   try {
+    await checkAuth(req, res);
     const user = await User.findById(req.params.userid).select("currentStage").exec();
     const review = user.currentStage.reviews.id(req.params.reviewid);
 
@@ -90,7 +90,7 @@ module.exports.reviewsReadOne =  async function(req, res) {
       if (req.role == "moderator" || req.role == "admin") {
         return res.status(200).json(review);
       } else {
-        if (review.delete) {
+        if (review.delete && !(req.role == "moderator" || req.role == "admin") ) {
           return res.status(404).json({error: "review was deleted"});
         } else {
           return res.status(200).json(review);
@@ -137,19 +137,22 @@ module.exports.reviewsUpdateOne = async function(req, res) {
     try {
       const user = await User.findById(userId).exec();
       const review = user.currentStage.reviews.id(req.params.reviewid);
-      if (review.delete) {
+      if (review.delete && !( req.role == "moderator" || req.role == "admin") ) {
         return res.status(404).json({error: "review was deleted"});
       };
       review.bookAuthor = req.body.bookAuthor ?? review.bookAuthor;
       review.bookName = req.body.bookName ?? review.bookName;
       review.reviewText = req.body.reviewText ?? review.reviewText;
       review.imgURL = req.body.imgURL ?? review.imgURL;
-      if (req.role == "moderator" && req.body.rating) {
-        review.rating = new Rating({
+      if ( req.role == "moderator" || req.role == "admin") {
+        review.delete = req.body.delete ?? review.delete;
+      }
+      if (( req.role == "moderator" || req.role == "admin") && req.body.rating) {
+        review.rating = {
           points: req.body.rating.points,
           emojiURL: req.body.rating.emojiURL,
           moderator: req.userId
-        });
+        };
       }
       await user.save();
       return res.status(201).json({status: "success"});
@@ -178,3 +181,18 @@ module.exports.reviewsDeleteOne = async function(req, res) {
     return res.status(500).json({error: "Has not permission"})
   }
 };
+
+module.exports.moderate = async function(req, res) {
+    if (await checkAuth(req, res) && ( req.role == "admin" || req.role == "moderator" )) {
+    try { //'currentStage.stage':req.params.stageid,
+      const users = await User.find({ 'currentStage.reviews.$.rating.moderator': null}).select("currentStage firstName familyName").exec();
+      const reviews = users.reduce((acc, el) => { acc.push(el.currentStage.reviews); return acc}, []).flat();
+      return res.status(200).json(reviews);
+    } catch(err) {
+      console.log(err);
+      return res.status(500).json({error: "something wrong"});
+    }
+  } else {
+    return res.status(500).json({error: "Has not permission"})
+  }
+}

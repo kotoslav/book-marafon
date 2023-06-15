@@ -24,6 +24,7 @@ router.post('/users/:userid/register/:stageid', ctrlUsers.usersStageRegister);
 router.post('/users/register/:stageid', ctrlUsers.usersStageRegister);
 router.put('/users/:userid/move/:stageid', ctrlUsers.usersStageMove);
 router.put('/users/move/:stageid', ctrlUsers.usersStageMove);
+//router.get('/table/:stageid') //users information with reviews titles and rating
 
 router.get('/reviews/:userid', ctrlReviews.reviewsReadManyByUser);
 router.get('/reviews/:userid/:reviewid', ctrlReviews.reviewsReadOne);
@@ -33,6 +34,8 @@ router.post('/reviews', reviewValidation, ctrlReviews.reviewsCreate);
 router.put('/reviews/:reviewid', reviewValidation, ctrlReviews.reviewsUpdateOne);
 router.put('/reviews/:userid/:reviewid', reviewValidation, ctrlReviews.reviewsUpdateOne);
 router.delete('/reviews/:reviewid', ctrlReviews.reviewsDeleteOne);
+router.delete('/reviews/:userid/:reviewid', ctrlReviews.reviewsDeleteOne);
+router.get('/moderator/:stageid', ctrlReviews.moderate); //all not modarated reviews from selected stage
 
 /*
 router.get('/stages/active', ctrlStages.stagesReadManyActive);
