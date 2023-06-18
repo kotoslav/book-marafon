@@ -13,6 +13,7 @@ const sendJsonResponse = function(res, status, content) {
 
 module.exports.reviewsReadManyByUser =  async function(req, res) {
   try {
+  await checkAuth(req, res);
   const userId = req.params.userid ?? req.userId;
 
   const user = await User.findById(userId).exec();
@@ -46,6 +47,7 @@ module.exports.reviewsReadManyByUser =  async function(req, res) {
 
 module.exports.oldStageReviewsReadManyByUser = async function(req, res) {
   try {
+  await checkAuth(req, res);
   const userId = req.params.userid ?? req.userId;
 
   const user = await User.findById(userId).select("oldStages").exec();
@@ -76,10 +78,11 @@ module.exports.oldStageReviewsReadManyByUser = async function(req, res) {
   }
 };
 
-module.exports.reviewsReadOne =  async function(req, res) {
+module.exports.reviewReadOne =  async function(req, res) {
   try {
     await checkAuth(req, res);
-    const user = await User.findById(req.params.userid).select("currentStage").exec();
+    const userId = req.params.userid ?? req.userId;
+    const user = await User.findById(userId).select("currentStage").exec();
     const review = user.currentStage.reviews.id(req.params.reviewid);
 
     if (!user) {
@@ -108,9 +111,9 @@ module.exports.reviewsCreate = async function(req, res) {
   if (!errors.isEmpty()) {
     return res.status(400).json(errors.array());
   };
-  const userId = req.params.userid ?? req.userId;
-  if (await checkAuth(req, res) && ( req.userId == userId || hasPermission(req, res)  )) {
+  if (await checkAuth(req, res) && ( await hasPermission(req, res) )) {
     try {
+        const userId = req.params.userid ?? req.userId;
         const user = await User.findById(userId).exec();
         const reviews = user.currentStage.reviews;
         const newReview = new Review({
@@ -132,9 +135,9 @@ module.exports.reviewsCreate = async function(req, res) {
 };
 
 module.exports.reviewsUpdateOne = async function(req, res) {
-  const userId = req.params.userid ?? req.userId;
-  if (await checkAuth(req, res) && ( req.userId == userId || hasPermission(req, res)  )) {
+  if (await checkAuth(req, res) && ( await hasPermission(req, res) )) {
     try {
+      const userId = req.params.userid ?? req.userId;
       const user = await User.findById(userId).exec();
       const review = user.currentStage.reviews.id(req.params.reviewid);
       if (review.delete && !( req.role == "moderator" || req.role == "admin") ) {
@@ -161,38 +164,48 @@ module.exports.reviewsUpdateOne = async function(req, res) {
       return res.status(500).json({error: "something wrong"});
     }
   } else {
-    return res.status(500).json({error: "Has not permission"})
+    return res.status(500).json({error: "Has not permission"});
   }
 };
 
 module.exports.reviewsDeleteOne = async function(req, res) {
-  const userId = req.params.userid ?? req.userId;
-  if (await checkAuth(req, res) && ( req.userId == userId || hasPermission(req, res)  )) {
+  if (await checkAuth(req, res) && ( await hasPermission(req, res) )) {
     try {
-      const user = await User.findById(req.params.userid).select("currentStage").exec();
+      const userId = req.params.userid ?? req.userId;
+      const user = await User.findById(userId).select("currentStage").exec();
       const review = user.currentStage.reviews.id(req.params.reviewid);
       review.delete = true;
       await user.save();
       return res.status(201).json({status: "success"});
     } catch(err) {
+      console.log(err);
       return res.status(500).json({error: "something wrong"});
     }
   } else {
-    return res.status(500).json({error: "Has not permission"})
+    return res.status(500).json({error: "Has not permission"});
   }
 };
 
 module.exports.moderate = async function(req, res) {
     if (await checkAuth(req, res) && ( req.role == "admin" || req.role == "moderator" )) {
-    try { //'currentStage.stage':req.params.stageid,
-      const users = await User.find({ 'currentStage.reviews.$.rating.moderator': null}).select("currentStage firstName familyName").exec();
-      const reviews = users.reduce((acc, el) => { acc.push(el.currentStage.reviews); return acc}, []).flat();
+    try {
+      const users = await User.find({ 'currentStage.stage':req.params.stageid,
+        'currentStage.reviews.rating.moderator': null}).select("currentStage firstName familyName").exec();
+      const reviews = users.reduce(
+        (acc, el) => {
+          acc.push(el.currentStage.reviews.reduce(
+            (reviewAcc,review) => {
+              if (review.rating.moderator === undefined){
+                reviewAcc.push({...review._doc, reviewAuthor: {firstName: el.firstName, familyName: el.familyName, _id: el._id}});
+              }
+              return reviewAcc}, []));
+          return acc}, []).flat();
       return res.status(200).json(reviews);
     } catch(err) {
       console.log(err);
       return res.status(500).json({error: "something wrong"});
     }
   } else {
-    return res.status(500).json({error: "Has not permission"})
+    return res.status(500).json({error: "Has not permission"});
   }
 }

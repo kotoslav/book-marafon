@@ -2,8 +2,10 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = mongoose.model('User');
+const Stage = mongoose.model('Stage');
 const { validationResult } = require('express-validator');
 const { checkAuth, hasPermission } = require('../utils/checkauth');
+const ctrlStages = require('../controllers/stages');
 
 
 
@@ -15,10 +17,13 @@ const sendJsonResponse = function(res, status, content) {
 module.exports.usersReadOne =  async function(req, res) {
   try {
   const user = (await checkAuth(req, res) && await hasPermission(req, res))?
-  await User.findById(req.params.userid).select("-passwordHash").exec() :
+  await User.findById(req.params.userid).populate("currentStage.stage").select("-passwordHash").exec() :
   await User.findById(req.params.userid)
-  .select("firstName currentStage oldStages liveLocation.city liveLocation.region").exec();
+  .populate("currentStage.stage").select("firstName currentStage liveLocation.city liveLocation.region").exec();
 
+  if (!await hasPermission(req, res)) {
+    user.currentStage.reviews = user.currentStage.reviews.reduce((acc, review) => {if (review.rating.moderator !== undefined && review.delete !== true) acc.push(review); return acc}, []);
+  }
 
   if (!user) {
     sendJsonResponse(res, 404, {"message": "userid not found"});
@@ -117,9 +122,9 @@ module.exports.usersLogin =  async function(req, res) {
 };
 
 module.exports.usersUpdateOne = async function(req, res) {
-  const userId = req.params.userid ?? req.userId;
-  if (await checkAuth(req, res) && ( req.userId == userId || hasPermission(req, res) )) {
+  if (await checkAuth(req, res) && ( await hasPermission(req, res) )) {
     try {
+      const userId = req.params.userid ?? req.userId;
       const user = await User.findById(userId).exec();
       user.firstName = req.body.firstName ?? user.firstName;
       user.familyName = req.body.familyName ?? user.familyName;
@@ -147,11 +152,20 @@ module.exports.usersUpdateOne = async function(req, res) {
 В методы ниже добавить проверку активности выбраного и текущего этапа
 */
 module.exports.usersStageRegister = async function(req, res) {
-  const userId = req.params.userid ?? req.userId;
-  if (await checkAuth(req, res) && ( req.userId == userId || hasPermission(req, res) )) {
+  if (await checkAuth(req, res) && ( await hasPermission(req, res) )) {
     try {
+      const stageToReg = await Stage.findById(req.params.stageid).exec();
+      if (stageToReg.start > new Date() || stageToReg.end < new Date()) {
+        return res.status(300).json({error: "requested stage is not active"});
+      }
+      const userId = req.params.userid ?? req.userId;
       const user = await User.findById(userId).exec();
+      if (user.currentStage.stage == req.params.stageid) {
+        return res.status(500).json({error: "you already in this stage"});
+      }
+      if (user.currentStage.reviews.length > 0) {
       user.oldStages.push(user.currentStage);
+      }
       user.currentStage.reviews = [];
       user.currentStage.stage = req.params.stageid;
       await user.save();
@@ -168,10 +182,26 @@ module.exports.usersStageRegister = async function(req, res) {
 
 
 module.exports.usersStageMove = async function(req, res) {
-  const userId = req.params.userid ?? req.userId;
-  if (await checkAuth(req, res) && ( req.userId == userId || hasPermission(req, res) )) {
+  if (await checkAuth(req, res) && ( await hasPermission(req, res) )) {
     try {
-      const user = await User.findById(userId).exec();
+      const stageToReg = await Stage.findById(req.params.stageid).exec();
+      if (stageToReg.start > new Date() || stageToReg.end < new Date()) {
+        return res.status(300).json({error: "requested stage is not active"});
+      }
+
+      const userId = req.params.userid ?? req.userId;
+      const user = await User.findById(userId).populate("currentStage.stage").exec();
+      if (!user.currentStage.stage) {
+        return res.status(500).json({error: "you must register previously"});
+      };
+
+      if (user.currentStage.stage._id == req.params.stageid) {
+        return res.status(500).json({error: "you already in this stage"});
+      };
+
+      if (user.currentStage.stage.start > new Date() || user.currentStage.stage.end < new Date()) {
+        return res.status(300).json({error: "current stage is not active"});
+      };
       user.currentStage.stage = req.params.stageid;
       await user.save();
       return res.status(201).json({status: "success"});
@@ -184,3 +214,45 @@ module.exports.usersStageMove = async function(req, res) {
     return res.status(500).json({error: "Has not permission"})
   }
 };
+
+module.exports.table = async function(req, res) {
+    try {
+      const users = await User.find({'currentStage.stage':req.params.stageid}).select("currentStage.reviews.bookName currentStage.reviews.bookAuthor currentStage.reviews.rating firstName familyName liveLocation.city liveLocation.region").exec();
+      const tableUsers = users.reduce(
+        (acc, el) => {
+          acc.push( {reviews: el.currentStage.reviews.reduce(
+            (reviewAcc,review) => {
+              if (review.rating.moderator !== undefined){
+                reviewAcc.push({rating: {points: review.rating.points, emojiURL: review.rating.emojiURL}, bookAuthor: review.bookAuthor, bookName: review.bookName});
+              }
+              return reviewAcc}, []), firstName: el.firstName, familyName: el.familyName, _id: el._id, liveLocation: el.liveLocation} );
+          return acc}, []);
+      return res.status(200).json(tableUsers);
+    } catch(err) {
+      console.log(err);
+      return res.status(500).json({error: "something wrong"});
+    }
+}
+
+module.exports.tableOldResults = async function(req, res) {
+    try {
+      let users = await User.find({}).exec();
+
+      users = users.map(user => { user.oldStages = user.oldStages.find((stage) => {return stage.stage == req.params.stageid}); return user});
+      const tableUsers = users.reduce(
+        (acc, el) => {
+          console.log(el);
+          if (el.oldStages)
+          acc.push( {reviews: el.oldStages.reviews.reduce(
+            (reviewAcc,review) => {
+              if (review.rating.moderator !== undefined){
+                reviewAcc.push({rating: {points: review.rating.points, emojiURL: review.rating.emojiURL}, bookAuthor: review.bookAuthor, bookName: review.bookName});
+              }
+              return reviewAcc}, []), firstName: el.firstName, familyName: el.familyName, _id: el._id, liveLocation: el.liveLocation} );
+          return acc}, []);
+      return res.status(200).json(tableUsers);
+    } catch(err) {
+      console.log(err);
+      return res.status(500).json({error: "something wrong"});
+    }
+}
