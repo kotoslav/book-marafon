@@ -1,23 +1,5 @@
 const mongoose = require('mongoose');
 
-const reviewSchema = new mongoose.Schema({
-    bookAuthor: String,
-    bookName: String,
-    reviewText: String,
-    imgURL: String,
-    delete: {type: Boolean, default: false},
-    rating: {
-        points: {type: Number, default: 0},
-        emojiURL: String,
-        moderator: { type: mongoose.Schema.ObjectId, ref: 'User' }
-    }
-}, {timestamps: true});
-
-const stageSchema = new mongoose.Schema({
-    stage: { type: mongoose.Schema.ObjectId, ref: 'Stage' },
-    reviews: { type: [reviewSchema], default: []}
-});
-
 const userSchema = new mongoose.Schema({
     firstName: { type: String, required: true, maxLength: 100 },
     familyName: { type: String, required: true, maxLength: 100 },
@@ -27,8 +9,7 @@ const userSchema = new mongoose.Schema({
     email: { type: String, required: true, lowercase: true },
     passwordHash: {type: String, required: true},
     role: {type: String, default: "player"},
-    currentStage: {type: stageSchema, default: {}},
-    oldStages: [stageSchema],
+    stages: [{ type: mongoose.Schema.ObjectId, ref: 'Stage' }],
     liveLocation: {
         coord: [Number, Number],
         city: {type: String, required: true},
@@ -40,4 +21,3 @@ const userSchema = new mongoose.Schema({
 
 
 const UserModel = mongoose.model('User', userSchema);
-const ReviewModel = mongoose.model('Review', reviewSchema);
