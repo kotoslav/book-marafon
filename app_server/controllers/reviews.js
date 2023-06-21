@@ -6,11 +6,6 @@ const { validationResult } = require('express-validator');
 const { checkAuth, hasPermission } = require('../utils/checkauth');
 
 
-const sendJsonResponse = function(res, status, content) {
-    res.status(status);
-    res.json(content);
-};
-
 module.exports.reviewsReadManyByUser =  async function(req, res) {
   try {
   await checkAuth(req, res);
@@ -31,8 +26,8 @@ module.exports.reviewsReadManyByUser =  async function(req, res) {
   return res.status(200).json(reviews);
 
   } catch(err) {
-    sendJsonResponse(res, 400, {"message": "userid not valid"});
     console.log(err);
+    return res.status(400).json({"message": "userid not valid"});
   }
 };
 
@@ -42,21 +37,23 @@ module.exports.reviewReadOne =  async function(req, res) {
     const review = await Review.findById(req.params.reviewid).exec();
 
     if (!review) {
-      sendJsonResponse(res, 404, {"message": "reviewid not found"});
+      return res.status(404).json({"message": "reviewid not found"});
     } else {
       if (req.role == "moderator" || req.role == "admin") {
         return res.status(200).json(review);
       } else {
         if (review.delete && !(req.role == "moderator" || req.role == "admin") ) {
           return res.status(404).json({error: "review was deleted"});
+        } else if (!review.rating.moderator && !(req.role == "moderator" || req.role == "admin" || req.userId == review.reviewAuthor)) {
+          return res.status(404).json({"message": "reviewid not found"});
         } else {
           return res.status(200).json(review);
         }
       }
     }
   } catch(err) {
-    res.status(400).json({"message": "revievid is not valid"});
     console.log(err);
+    return res.status(400).json({"message": "revievid is not valid"});
   }
 };
 
@@ -88,9 +85,7 @@ module.exports.reviewsCreate = async function(req, res) {
 module.exports.reviewsUpdateOne = async function(req, res) {
   if (await checkAuth(req, res) && ( await hasPermission(req, res) )) {
     try {
-      const userId = req.params.userid ?? req.userId;
-      const user = await User.findById(userId).exec();
-      const review = user.currentStage.reviews.id(req.params.reviewid);
+      const review = Review.findById(req.params.reviewid);
       if (review.delete && !( req.role == "moderator" || req.role == "admin") ) {
         return res.status(404).json({error: "review was deleted"});
       };
@@ -108,7 +103,7 @@ module.exports.reviewsUpdateOne = async function(req, res) {
           moderator: req.userId
         };
       }
-      await user.save();
+      await review.save();
       return res.status(201).json({status: "success"});
     } catch(err) {
       console.log(err);
@@ -140,17 +135,7 @@ module.exports.reviewsDeleteOne = async function(req, res) {
 module.exports.moderate = async function(req, res) {
     if (await checkAuth(req, res) && ( req.role == "admin" || req.role == "moderator" )) {
     try {
-      const users = await User.find({ 'currentStage.stage':req.params.stageid,
-        'currentStage.reviews.rating.moderator': null}).select("currentStage firstName familyName").exec();
-      const reviews = users.reduce(
-        (acc, el) => {
-          acc.push(el.currentStage.reviews.reduce(
-            (reviewAcc,review) => {
-              if (review.rating.moderator === undefined){
-                reviewAcc.push({...review._doc, reviewAuthor: {firstName: el.firstName, familyName: el.familyName, _id: el._id}});
-              }
-              return reviewAcc}, []));
-          return acc}, []).flat();
+      const reviews = await Review.find({"rating.moderator": null, delete: false}).exec();
       return res.status(200).json(reviews);
     } catch(err) {
       console.log(err);
