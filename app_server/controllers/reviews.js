@@ -69,7 +69,7 @@ module.exports.reviewsCreate = async function(req, res) {
           bookName: req.body.bookName,
           reviewText: req.body.reviewText,
           imgURL: req.body.imgURL,
-          reviewAuthor: req.params.userid,
+          reviewAuthor: req.userId,
           stageId: req.params.stageid
         });
         newReview.save();
@@ -83,12 +83,15 @@ module.exports.reviewsCreate = async function(req, res) {
 };
 
 module.exports.reviewsUpdateOne = async function(req, res) {
-  if (await checkAuth(req, res) && ( await hasPermission(req, res) )) {
+  if (await checkAuth(req, res)) {
     try {
       const review = Review.findById(req.params.reviewid);
       if (review.delete && !( req.role == "moderator" || req.role == "admin") ) {
         return res.status(404).json({error: "review was deleted"});
       };
+      if (!(review.reviewAuthor == req.userId) || !( req.role == "moderator" || req.role == "admin")){
+        return res.status(500).json({error: "Has not permission"});
+      }
       review.bookAuthor = req.body.bookAuthor ?? review.bookAuthor;
       review.bookName = req.body.bookName ?? review.bookName;
       review.reviewText = req.body.reviewText ?? review.reviewText;
@@ -115,13 +118,14 @@ module.exports.reviewsUpdateOne = async function(req, res) {
 };
 
 module.exports.reviewsDeleteOne = async function(req, res) {
-  if (await checkAuth(req, res) && ( await hasPermission(req, res) )) {
+  if (await checkAuth(req, res)) {
     try {
-      const userId = req.params.userid ?? req.userId;
-      const user = await User.findById(userId).select("currentStage").exec();
-      const review = user.currentStage.reviews.id(req.params.reviewid);
+      const review = await Review.findById(req.params.reviewid).exec();
+      if (!((review.reviewAuthor == req.userId) && review.rating.moderator) || !( req.role == "moderator" || req.role == "admin")){
+        return res.status(500).json({error: "Has not permission"});
+      }
       review.delete = true;
-      await user.save();
+      await review.save();
       return res.status(201).json({status: "success"});
     } catch(err) {
       console.log(err);

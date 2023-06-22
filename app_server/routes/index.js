@@ -19,14 +19,14 @@ router.post('/users/register', registerValidation, ctrlUsers.usersRegister);
 router.post('/users/login', ctrlUsers.usersLogin);
 router.put('/users/:userid', ctrlUsers.usersUpdateOne);
 router.post('/users/:userid/register/:stageid', ctrlUsers.usersStageRegister);
-router.put('/users/:userid/move/:stageid', ctrlUsers.usersStageMove);
+router.put('/users/:userid/move/:stageid/:newstageid', ctrlUsers.usersStageMove);
 router.get('/table/:stageid', ctrlUsers.table); //users information with reviews titles and rating
 
 router.get('/reviews/:stageid/:userid', ctrlReviews.reviewsReadManyByUser);
 router.get('/review/:reviewid', ctrlReviews.reviewReadOne);
-router.post('/reviews/:stageid/:userid', reviewValidation, ctrlReviews.reviewsCreate);
-router.put('/reviews/:userid/:reviewid', reviewValidation, ctrlReviews.reviewsUpdateOne);
-router.delete('/reviews/:userid/:reviewid', ctrlReviews.reviewsDeleteOne);
+router.post('/reviews/:stageid', reviewValidation, ctrlReviews.reviewsCreate);
+router.put('/reviews/:reviewid', reviewValidation, ctrlReviews.reviewsUpdateOne);
+router.delete('/reviews/:reviewid', ctrlReviews.reviewsDeleteOne);
 router.get('/moderator/:stageid', ctrlReviews.moderate);
 
 

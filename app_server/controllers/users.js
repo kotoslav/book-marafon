@@ -155,7 +155,7 @@ module.exports.usersStageRegister = async function(req, res) {
       const user = await User.findById(userId).exec();
       if (user.stages.includes(req.params.stageid)) {
         return res.status(500).json({error: "you already in this stage"});
-      }
+      };
       user.stages.push(req.params.stageid);
       await user.save();
       return res.status(201).json({status: "success"});
@@ -173,24 +173,26 @@ module.exports.usersStageRegister = async function(req, res) {
 module.exports.usersStageMove = async function(req, res) {
   if (await checkAuth(req, res) && ( await hasPermission(req, res) )) {
     try {
-      const stageToReg = await Stage.findById(req.params.stageid).exec();
+      const stageToReg = await Stage.findById(req.params.newstageid).exec();
       if (stageToReg.start > new Date() || stageToReg.end < new Date()) {
         return res.status(300).json({error: "requested stage is not active"});
       }
 
       const userId = req.params.userid ?? req.userId;
-      const user = await User.findById(userId).populate("currentStage.stage").exec();
-      if (!user.currentStage.stage) {
+      const user = await User.findById(userId).populate("stages").exec();
+      if (user.stages.length == 0) {
         return res.status(500).json({error: "you must register previously"});
       };
 
-      if (user.currentStage.stage._id == req.params.stageid) {
+      if (user.stages.includes(req.params.newstageid)) {
         return res.status(500).json({error: "you already in this stage"});
       };
 
-      if (user.currentStage.stage.start > new Date() || user.currentStage.stage.end < new Date()) {
+
+      if (user.stages.id(req.params.newstageid).start > new Date() || user.stages.id(req.params.newstageid).end < new Date()) {
         return res.status(300).json({error: "current stage is not active"});
       };
+
       user.currentStage.stage = req.params.stageid;
       await user.save();
       return res.status(201).json({status: "success"});
