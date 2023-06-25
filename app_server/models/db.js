@@ -40,3 +40,4 @@ process.on('SIGTERM', () => {
 
 require('./users');
 require('./stages');
+require('./reviews');

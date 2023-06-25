@@ -2,8 +2,11 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = mongoose.model('User');
+const Review = mongoose.model('Review');
+const Stage = mongoose.model('Stage');
 const { validationResult } = require('express-validator');
 const { checkAuth, hasPermission } = require('../utils/checkauth');
+const ctrlStages = require('../controllers/stages');
 
 
 
@@ -15,10 +18,9 @@ const sendJsonResponse = function(res, status, content) {
 module.exports.usersReadOne =  async function(req, res) {
   try {
   const user = (await checkAuth(req, res) && await hasPermission(req, res))?
-  await User.findById(req.params.userid).select("-passwordHash").exec() :
+  await User.findById(req.params.userid).select("-passwordHash").populate("stages").exec() :
   await User.findById(req.params.userid)
-  .select("firstName currentStage oldStages liveLocation.city liveLocation.region").exec();
-
+  .select("firstName stages liveLocation.city liveLocation.region").populate("stages").exec();
 
   if (!user) {
     sendJsonResponse(res, 404, {"message": "userid not found"});
@@ -117,9 +119,9 @@ module.exports.usersLogin =  async function(req, res) {
 };
 
 module.exports.usersUpdateOne = async function(req, res) {
-  const userId = req.params.userid ?? req.userId;
-  if (await checkAuth(req, res) && ( req.userId == userId || hasPermission(req, res) )) {
+  if (await checkAuth(req, res) && ( await hasPermission(req, res) )) {
     try {
+      const userId = req.params.userid ?? req.userId;
       const user = await User.findById(userId).exec();
       user.firstName = req.body.firstName ?? user.firstName;
       user.familyName = req.body.familyName ?? user.familyName;
@@ -143,17 +145,19 @@ module.exports.usersUpdateOne = async function(req, res) {
   }
 };
 
-/*
-В методы ниже добавить проверку активности выбраного и текущего этапа
-*/
 module.exports.usersStageRegister = async function(req, res) {
-  const userId = req.params.userid ?? req.userId;
-  if (await checkAuth(req, res) && ( req.userId == userId || hasPermission(req, res) )) {
+  if (await checkAuth(req, res) && ( await hasPermission(req, res) )) {
     try {
+      const stageToReg = await Stage.findById(req.params.stageid).exec();
+      if (stageToReg.start > new Date() || stageToReg.end < new Date()) {
+        return res.status(300).json({error: "requested stage is not active"});
+      }
+      const userId = req.params.userid ?? req.userId;
       const user = await User.findById(userId).exec();
-      user.oldStages.push(user.currentStage);
-      user.currentStage.reviews = [];
-      user.currentStage.stage = req.params.stageid;
+      if (user.stages.includes(req.params.stageid)) {
+        return res.status(500).json({error: "you already in this stage"});
+      };
+      user.stages.push(req.params.stageid);
       await user.save();
       return res.status(201).json({status: "success"});
     } catch(err) {
@@ -168,12 +172,33 @@ module.exports.usersStageRegister = async function(req, res) {
 
 
 module.exports.usersStageMove = async function(req, res) {
-  const userId = req.params.userid ?? req.userId;
-  if (await checkAuth(req, res) && ( req.userId == userId || hasPermission(req, res) )) {
+  if (await checkAuth(req, res) && ( await hasPermission(req, res) )) {
     try {
+      const newStage = await Stage.findById(req.params.newstageid).exec();
+      const oldStage = await Stage.findById(req.params.oldstageid).exec();
+      if (newStage.start > new Date() || newStage.end < new Date()) {
+        return res.status(300).json({error: "requested stage is not active"});
+      }
+
+      const userId = req.params.userid ?? req.userId;
       const user = await User.findById(userId).exec();
-      user.currentStage.stage = req.params.stageid;
+      if (user.stages.length == 0) {
+        return res.status(500).json({error: "you must register previously"});
+      };
+
+      if (user.stages.find(stage => stage._id == req.params.newstageid)) {
+        return res.status(500).json({error: "you already in this stage"});
+      };
+
+
+      if (oldStage.start > new Date() || oldStage.end < new Date()) {
+        return res.status(300).json({error: "current stage is not active"});
+      };
+
+      user.stages[user.stages.indexOf(req.params.oldstageid)] = req.params.newstageid;
       await user.save();
+      await Review.updateMany({stageId: req.params.oldstageid}, {$set: {stageId: req.params.newstageid}});
+
       return res.status(201).json({status: "success"});
     } catch(err) {
       console.log(err);
@@ -184,3 +209,20 @@ module.exports.usersStageMove = async function(req, res) {
     return res.status(500).json({error: "Has not permission"})
   }
 };
+
+module.exports.table = async function(req, res) {
+    try {
+      const users = await User.find({'stages':req.params.stageid}).select("firstName familyName liveLocation.city liveLocation.region").exec();
+
+      const reviews = await Review.find({stageId: req.params.stageid, 'delete': false, 'rating.moderator': {$exists: true}}).select("bookName rating.points rating.emojiURL reviewAuthor").exec();
+      const tableUsers = users.map(user => {
+        user = user.toObject();
+        user.reviews = reviews.filter(review => review.reviewAuthor.valueOf() == user._id.valueOf());
+        return user
+      });
+      return res.status(200).json(tableUsers);
+    } catch(err) {
+      console.log(err);
+      return res.status(500).json({error: "something wrong"});
+    }
+}

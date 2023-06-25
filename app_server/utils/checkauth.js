@@ -17,8 +17,8 @@ module.exports.checkAuth = async (req, res) => {
 
 module.exports.hasPermission = async (req, res) => {
     if (req.userId) {
-        return req.params.userid === req.userId
-        || req.role == "admin" || req.role == "moderator";
+        return (req.params.userid === req.userId
+        || req.role == "admin" || req.role == "moderator");
     } else {
         return false;
     }
