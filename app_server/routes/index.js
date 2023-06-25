@@ -19,8 +19,8 @@ router.post('/users/register', registerValidation, ctrlUsers.usersRegister);
 router.post('/users/login', ctrlUsers.usersLogin);
 router.put('/users/:userid', ctrlUsers.usersUpdateOne);
 router.post('/users/:userid/register/:stageid', ctrlUsers.usersStageRegister);
-router.put('/users/:userid/move/:stageid/:newstageid', ctrlUsers.usersStageMove);
-router.get('/table/:stageid', ctrlUsers.table); //users information with reviews titles and rating
+router.put('/users/:userid/move/:oldstageid/:newstageid', ctrlUsers.usersStageMove);
+router.get('/table/:stageid', ctrlUsers.table);
 
 router.get('/reviews/:stageid/:userid', ctrlReviews.reviewsReadManyByUser);
 router.get('/review/:reviewid', ctrlReviews.reviewReadOne);

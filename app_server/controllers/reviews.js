@@ -8,18 +8,21 @@ const { checkAuth, hasPermission } = require('../utils/checkauth');
 
 module.exports.reviewsReadManyByUser =  async function(req, res) {
   try {
+
   await checkAuth(req, res);
   const userId = req.params.userid ?? req.userId;
   let reviews;
-  if (await checkAuth(req, res) && ( req.userId == req.params.userid )) {
+
+  if (await checkAuth(req, res) && (( req.userId == req.params.userid) || (req.role != "player") )) {
   if (req.role == "moderator" || req.role == "admin") {
   reviews = await Review.find({reviewAuthor: userId, stageId: req.params.stageid}).exec();
   } else {
-  reviews = await Review.find({reviewAuthor: userId, stageId: req.params.stageid, 'rating.delete': false}).exec();
+  reviews = await Review.find({reviewAuthor: userId, stageId: req.params.stageid, 'delete': false}).exec();
   };
   } else {
- reviews = await Review.find({reviewAuthor: userId, stageId: req.params.stageid, 'rating.delete': false, 'rating.moderator': {$exists: true}}).exec();
+  reviews = await Review.find({reviewAuthor: userId, stageId: req.params.stageid, 'delete': false, 'rating.moderator': {$exists: true}}).exec();
   }
+
   if (!reviews) {
     return res.status(404).json({"message": "user has not reviews in this stage"});
   }
@@ -85,11 +88,11 @@ module.exports.reviewsCreate = async function(req, res) {
 module.exports.reviewsUpdateOne = async function(req, res) {
   if (await checkAuth(req, res)) {
     try {
-      const review = Review.findById(req.params.reviewid);
+      const review = await Review.findById(req.params.reviewid);
       if (review.delete && !( req.role == "moderator" || req.role == "admin") ) {
         return res.status(404).json({error: "review was deleted"});
       };
-      if (!(review.reviewAuthor == req.userId) || !( req.role == "moderator" || req.role == "admin")){
+      if (!((review.reviewAuthor == req.userId) || ( req.role == "moderator" || req.role == "admin"))) {
         return res.status(500).json({error: "Has not permission"});
       }
       review.bookAuthor = req.body.bookAuthor ?? review.bookAuthor;
